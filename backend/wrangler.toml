@@ -8,6 +8,11 @@ binding = "DB"
 database_name = "cherry-logistics-db"
 database_id = "854b2a4e-f1e4-41b2-96b1-a21cc60a3de4"
 
+# 环境变量（快递100 API）
+[vars]
+KUAIDI100_CUSTOMER = "8355F619EE92D96EEBFC8926A99ED965"
+KUAIDI100_KEY = "sRXQlxxD9337"
+
 # Python Worker 配置
 [build]
 command = ""

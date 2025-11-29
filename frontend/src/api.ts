@@ -110,3 +110,22 @@ export const authenticate = (passcode: string) =>
     }
   );
 
+// 查询快递物流信息（快递100）
+export interface TrackingInfo {
+  success: boolean;
+  tracking_number: string;
+  state: string;
+  state_text: string;
+  data: Array<{
+    time: string;
+    context: string;
+    ftime: string;
+  }>;
+  company: string;
+}
+
+export const queryTracking = (trackingNumber: string) =>
+  apiRequest<TrackingInfo>(
+    `/api/tracking/${trackingNumber}`
+  );
+

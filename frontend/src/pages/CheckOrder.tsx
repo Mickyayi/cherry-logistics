@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, PageContainer, Card, Loading } from '../components/UI';
-import { searchOrders, type Order } from '../api';
+import { searchOrders, queryTracking, type Order, type TrackingInfo } from '../api';
 import { ORDER_STATUS } from '../config';
 
 export default function CheckOrder() {
@@ -11,6 +11,8 @@ export default function CheckOrder() {
   const [phone, setPhone] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [searched, setSearched] = useState(false);
+  const [trackingInfo, setTrackingInfo] = useState<{ [key: string]: TrackingInfo }>({});
+  const [loadingTracking, setLoadingTracking] = useState<{ [key: string]: boolean }>({});
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +27,24 @@ export default function CheckOrder() {
     try {
       const result = await searchOrders(name, phone);
       setOrders(result.orders);
+      setTrackingInfo({});
     } catch (error: any) {
       alert(`查询失败：${error.message}`);
       setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQueryTracking = async (trackingNumber: string) => {
+    setLoadingTracking({ ...loadingTracking, [trackingNumber]: true });
+    try {
+      const result = await queryTracking(trackingNumber);
+      setTrackingInfo({ ...trackingInfo, [trackingNumber]: result });
+    } catch (error: any) {
+      alert(`物流查询失败：${error.message}`);
+    } finally {
+      setLoadingTracking({ ...loadingTracking, [trackingNumber]: false });
     }
   };
 
@@ -108,17 +123,70 @@ export default function CheckOrder() {
                   <p className="font-medium">{order.mall_order_no}</p>
                 </div>
 
-                {order.tracking_number && (
+                {order.tracking_number ? (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">快递单号</p>
-                    <p className="font-semibold text-blue-700">{order.tracking_number}</p>
-                  </div>
-                )}
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm text-gray-600">快递单号</p>
+                      {!trackingInfo[order.tracking_number] && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleQueryTracking(order.tracking_number!)}
+                          disabled={loadingTracking[order.tracking_number]}
+                        >
+                          {loadingTracking[order.tracking_number] ? '查询中...' : '查看物流'}
+                        </Button>
+                      )}
+                    </div>
+                    <p className="font-semibold text-blue-700 mb-2">{order.tracking_number}</p>
 
-                {!order.tracking_number && order.status !== 'pending' && (
-                  <div className="bg-gray-50 p-3 rounded-lg text-center text-sm text-gray-600">
-                    快递单号暂未填写
+                    {/* 物流轨迹 */}
+                    {trackingInfo[order.tracking_number] && (
+                      <div className="mt-3 border-t border-blue-200 pt-3">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-sm font-medium text-blue-900">
+                            {trackingInfo[order.tracking_number].company} - {trackingInfo[order.tracking_number].state_text}
+                          </p>
+                          <button
+                            onClick={() => {
+                              const newTracking = { ...trackingInfo };
+                              delete newTracking[order.tracking_number!];
+                              setTrackingInfo(newTracking);
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            收起
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {trackingInfo[order.tracking_number].data.map((item, idx) => (
+                            <div key={idx} className="flex gap-3">
+                              <div className="flex flex-col items-center">
+                                <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                {idx !== trackingInfo[order.tracking_number].data.length - 1 && (
+                                  <div className="w-0.5 flex-1 bg-gray-300 my-1"></div>
+                                )}
+                              </div>
+                              <div className="flex-1 pb-3">
+                                <p className={`text-xs ${idx === 0 ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                                  {item.ftime}
+                                </p>
+                                <p className={`text-sm mt-1 ${idx === 0 ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                                  {item.context}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  !order.tracking_number && order.status !== 'pending' && (
+                    <div className="bg-gray-50 p-3 rounded-lg text-center text-sm text-gray-600">
+                      快递单号暂未填写
+                    </div>
+                  )
                 )}
               </div>
             </Card>
@@ -128,4 +196,3 @@ export default function CheckOrder() {
     </PageContainer>
   );
 }
-

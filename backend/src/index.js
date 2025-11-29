@@ -68,6 +68,11 @@ async function handleRequest(request, env) {
       const body = await request.json();
       response = await authenticate(body.passcode);
     }
+    // Query express tracking (快递100)
+    else if (path.startsWith('/api/tracking/') && method === 'GET') {
+      const trackingNumber = path.split('/')[3];
+      response = await queryExpressTracking(trackingNumber, env);
+    }
     else {
       return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
     }
@@ -262,5 +267,87 @@ async function authenticate(passcode) {
   } else {
     throw new Error('密码错误');
   }
+}
+
+// 查询快递物流信息（快递100）
+async function queryExpressTracking(trackingNumber, env) {
+  if (!trackingNumber) {
+    throw new Error('请提供快递单号');
+  }
+
+  // 快递100 API 配置
+  const KUAIDI100_CUSTOMER = env.KUAIDI100_CUSTOMER || '8355F619EE92D96EEBFC8926A99ED965';
+  const KUAIDI100_KEY = env.KUAIDI100_KEY || 'sRXQlxxD9337';
+  
+  // 快递100 API 参数
+  const param = JSON.stringify({
+    com: 'shunfeng', // 顺丰快递代码
+    num: trackingNumber,
+  });
+
+  // 生成签名：MD5(param + key + customer)
+  const sign = await generateMD5(`${param}${KUAIDI100_KEY}${KUAIDI100_CUSTOMER}`);
+
+  // 构建请求 URL
+  const apiUrl = 'https://poll.kuaidi100.com/poll/query.do';
+  const formData = new URLSearchParams({
+    customer: KUAIDI100_CUSTOMER,
+    sign: sign.toUpperCase(),
+    param: param,
+  });
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const result = await response.json();
+
+    // 快递100 返回格式：
+    // { result: true/false, message: '...', data: [...], state: '0/1/2/3' }
+    if (result.result === false || result.returnCode !== '200') {
+      throw new Error(result.message || '查询失败');
+    }
+
+    return {
+      success: true,
+      tracking_number: trackingNumber,
+      state: result.state, // 0:在途 1:揽收 2:疑难 3:签收 4:退签 5:派件 6:退回
+      state_text: getStateText(result.state),
+      data: result.data || [], // 物流轨迹列表
+      company: '顺丰速运',
+    };
+  } catch (error) {
+    console.error('Kuaidi100 API Error:', error);
+    throw new Error(`物流查询失败：${error.message}`);
+  }
+}
+
+// 生成 MD5 签名
+async function generateMD5(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('MD5', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+// 物流状态文本映射
+function getStateText(state) {
+  const stateMap = {
+    '0': '运输中',
+    '1': '已揽收',
+    '2': '疑难件',
+    '3': '已签收',
+    '4': '退签',
+    '5': '派送中',
+    '6': '退回',
+  };
+  return stateMap[state] || '未知状态';
 }
 
