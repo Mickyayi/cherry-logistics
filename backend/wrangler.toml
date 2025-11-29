@@ -1,0 +1,17 @@
+name = "cherry-logistics-backend"
+main = "src/index.py"
+compatibility_date = "2024-11-01"
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "cherry-logistics-db"
+database_id = "YOUR_DATABASE_ID_HERE"
+
+# Python Worker 配置
+[build]
+command = ""
+
+[observability]
+enabled = true
+
