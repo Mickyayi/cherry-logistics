@@ -13,8 +13,8 @@ export default function Home() {
         <p className="text-gray-600 text-lg">物流查询系统</p>
       </div>
 
-      <div className="space-y-4 flex flex-col items-center">
-        <Card className="w-full max-w-sm">
+      <div className="space-y-4 flex flex-col">
+        <Card className="w-full">
           <Button
             fullWidth
             size="lg"
@@ -24,7 +24,7 @@ export default function Home() {
           </Button>
         </Card>
 
-        <Card className="w-full max-w-sm">
+        <Card className="w-full">
           <Button
             fullWidth
             size="lg"
