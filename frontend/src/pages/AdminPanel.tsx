@@ -93,14 +93,12 @@ export default function AdminPanel() {
   };
 
   const handleSaveTracking = async (orderId: number) => {
-    if (!trackingInput.trim()) {
-      alert('请输入快递单号');
-      return;
-    }
+    // 允许空值（清除快递单号）
+    const trimmedValue = trackingInput.trim();
 
     try {
-      await updateTracking(orderId, trackingInput.trim());
-      alert('快递单号已更新');
+      await updateTracking(orderId, trimmedValue);
+      alert(trimmedValue ? '快递单号已更新' : '快递单号已清除');
       setEditingTrackingId(null);
       setTrackingInput('');
       loadOrders();
@@ -309,11 +307,12 @@ export default function AdminPanel() {
                             value={trackingInput}
                             onChange={(e) => setTrackingInput(e.target.value)}
                             className="w-32 px-2 py-1 text-xs border border-gray-300 rounded"
-                            placeholder="输入单号"
+                            placeholder="输入单号或留空"
                           />
                           <button
                             onClick={() => handleSaveTracking(order.id)}
                             className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                            title={trackingInput.trim() ? '保存单号' : '清除单号'}
                           >
                             保存
                           </button>
