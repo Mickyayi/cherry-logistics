@@ -37,18 +37,41 @@ export default function LogisticsPanel() {
     navigate('/logistics/login');
   };
 
+  // 格式化单个订单的物流信息
+  const formatSingleOrder = (order: Order): string => {
+    const itemsText = order.items
+      .map(item => `${item.boxes}箱 ${item.size} ${item.variety}`)
+      .join('\n');
+    
+    return `${itemsText}\n${order.recipient_name} ${order.recipient_phone} ${order.recipient_address}`;
+  };
+
+  // 复制单个订单信息
   const copyOrderInfo = (order: Order) => {
-    const text = `订单号: ${order.order_id}
-商城订单号: ${order.mall_order_no}
-姓名: ${order.recipient_name}
-电话: ${order.recipient_phone}
-地址: ${order.recipient_address}
-商品: ${order.items.map(item => `${item.variety} ${item.size} ${item.boxes}箱`).join(', ')}`;
+    const text = formatSingleOrder(order);
 
     navigator.clipboard.writeText(text).then(() => {
       if (confirm('✅ 已复制到剪贴板\n\n是否标记为已发货？')) {
         handleMarkShipped(order.id);
       }
+    }).catch(() => {
+      alert('复制失败，请手动复制');
+    });
+  };
+
+  // 复制所有订单信息
+  const copyAllOrders = () => {
+    if (orders.length === 0) {
+      alert('没有可复制的订单');
+      return;
+    }
+
+    const text = orders
+      .map(order => formatSingleOrder(order))
+      .join('\n\n\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`✅ 已复制 ${orders.length} 个订单到剪贴板`);
     }).catch(() => {
       alert('复制失败，请手动复制');
     });
@@ -131,6 +154,20 @@ export default function LogisticsPanel() {
         </Card>
       )}
 
+      {/* 一键复制所有订单按钮 */}
+      {!loading && orders.length > 0 && (
+        <div className="mb-4">
+          <Button
+            fullWidth
+            size="lg"
+            variant="secondary"
+            onClick={copyAllOrders}
+          >
+            📋 一键复制所有物流信息 ({orders.length}个订单)
+          </Button>
+        </div>
+      )}
+
       {/* 新订单列表 */}
       {!loading && activeTab === 'new' && orders.length > 0 && (
         <div className="space-y-4">
@@ -149,10 +186,6 @@ export default function LogisticsPanel() {
 
                 <div className="bg-gray-50 p-3 rounded-lg space-y-2 text-sm">
                   <div>
-                    <span className="text-gray-600">商城订单号：</span>
-                    <span className="font-medium">{order.mall_order_no}</span>
-                  </div>
-                  <div>
                     <span className="text-gray-600">姓名：</span>
                     <span className="font-medium">{order.recipient_name}</span>
                   </div>
@@ -169,7 +202,7 @@ export default function LogisticsPanel() {
                     <div className="mt-1">
                       {order.items.map((item, idx) => (
                         <div key={idx} className="font-medium">
-                          {item.variety} - {item.size} × {item.boxes}箱
+                          {item.boxes}箱 {item.size} {item.variety}
                         </div>
                       ))}
                     </div>
@@ -216,9 +249,13 @@ export default function LogisticsPanel() {
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">商品：</span>
-                    <span className="font-medium">
-                      {order.items.map(item => `${item.variety} ${item.size} ${item.boxes}箱`).join(', ')}
-                    </span>
+                    <div className="font-medium">
+                      {order.items.map((item, idx) => (
+                        <div key={idx}>
+                          {item.boxes}箱 {item.size} {item.variety}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -250,4 +287,3 @@ export default function LogisticsPanel() {
     </PageContainer>
   );
 }
-
