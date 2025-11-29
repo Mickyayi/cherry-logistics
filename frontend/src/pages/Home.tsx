@@ -7,9 +7,10 @@ export default function Home() {
   return (
     <PageContainer>
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">🍒</h1>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">车厘子物流查询</h1>
-        <p className="text-gray-600">欢迎使用车厘子团购物流系统</p>
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">🍒</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">好鲜生商城</h1>
+        <h2 className="text-xl font-semibold text-red-600 mb-1">2026车厘子国内团购</h2>
+        <p className="text-gray-600 text-lg">物流查询系统</p>
       </div>
 
       <div className="space-y-4">
