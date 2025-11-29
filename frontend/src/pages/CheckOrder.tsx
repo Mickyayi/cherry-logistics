@@ -140,7 +140,7 @@ export default function CheckOrder() {
                     )}
 
                     {/* 物流轨迹 */}
-                    {trackingInfo[order.tracking_number] && (
+                    {order.tracking_number && trackingInfo[order.tracking_number] && (
                       <div className="mt-3 border-t border-blue-200 pt-3">
                         <div className="flex justify-between items-center mb-3">
                           <p className="text-sm font-medium text-blue-900">
@@ -149,7 +149,9 @@ export default function CheckOrder() {
                           <button
                             onClick={() => {
                               const newTracking = { ...trackingInfo };
-                              delete newTracking[order.tracking_number!];
+                              if (order.tracking_number) {
+                                delete newTracking[order.tracking_number];
+                              }
                               setTrackingInfo(newTracking);
                             }}
                             className="text-xs text-gray-500 hover:text-gray-700"
@@ -163,7 +165,7 @@ export default function CheckOrder() {
                             <div key={idx} className="flex gap-3">
                               <div className="flex flex-col items-center">
                                 <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                                {idx !== trackingInfo[order.tracking_number].data.length - 1 && (
+                                {order.tracking_number && idx !== trackingInfo[order.tracking_number].data.length - 1 && (
                                   <div className="w-0.5 flex-1 bg-gray-300 my-1"></div>
                                 )}
                               </div>
