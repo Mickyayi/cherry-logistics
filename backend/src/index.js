@@ -244,12 +244,11 @@ async function updateOrderStatus(orderId, status, env) {
 }
 
 async function updateTracking(orderId, trackingNumber, env) {
-  if (!trackingNumber) {
-    throw new Error('请提供快递单号');
-  }
+  // 允许空值（清除快递单号），将空字符串或 null 存储为 NULL
+  const trackingValue = trackingNumber && trackingNumber.trim() ? trackingNumber.trim() : null;
 
   await env.DB.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?')
-    .bind(trackingNumber, orderId)
+    .bind(trackingValue, orderId)
     .run();
 
   return { success: true, message: '快递单号更新成功' };
