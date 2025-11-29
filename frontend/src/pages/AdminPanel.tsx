@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, PageContainer, Card, Loading, Input, Select } from '../components/UI';
-import { getOrders, updateOrder, updateOrderStatus, Order, CherryItem } from '../api';
+import { getOrders, updateOrder, updateOrderStatus, type Order, type CherryItem } from '../api';
 import { isAuthenticated, clearAuthentication } from '../utils/auth';
 import { ORDER_STATUS, CHERRY_VARIETIES, CHERRY_SIZES } from '../config';
 

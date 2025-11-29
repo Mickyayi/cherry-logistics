@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, PageContainer, Card, Loading } from '../components/UI';
-import { searchOrders, Order } from '../api';
+import { searchOrders, type Order } from '../api';
 import { ORDER_STATUS } from '../config';
 
 export default function CheckOrder() {

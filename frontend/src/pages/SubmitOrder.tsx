@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Select, PageContainer, Card } from '../components/UI';
-import { createOrder, CherryItem } from '../api';
+import { createOrder, type CherryItem } from '../api';
 import { CHERRY_VARIETIES, CHERRY_SIZES } from '../config';
 
 export default function SubmitOrder() {

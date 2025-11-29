@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, PageContainer, Card, Loading, Input } from '../components/UI';
-import { getOrders, updateOrderStatus, updateTracking, Order } from '../api';
+import { getOrders, updateOrderStatus, updateTracking, type Order } from '../api';
 import { isAuthenticated, clearAuthentication } from '../utils/auth';
 
 export default function LogisticsPanel() {
