@@ -48,17 +48,68 @@ export default function LogisticsPanel() {
     return `${itemsText}\n${order.recipient_name} ${order.recipient_phone} ${order.recipient_address}`;
   };
 
+  // 兼容性复制函数（支持Android）
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    // 方法1：尝试使用现代Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.log('Clipboard API failed, trying fallback method');
+      }
+    }
+
+    // 方法2：使用传统的execCommand方法（兼容旧版Android）
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      
+      // 防止页面滚动和键盘弹出
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      textArea.style.padding = '0';
+      textArea.style.border = 'none';
+      textArea.style.outline = 'none';
+      textArea.style.boxShadow = 'none';
+      textArea.style.background = 'transparent';
+      textArea.style.opacity = '0';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      // 尝试复制
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        return true;
+      }
+    } catch (err) {
+      console.error('Fallback copy method failed:', err);
+    }
+
+    return false;
+  };
+
   // 复制单个订单信息
-  const copyOrderInfo = (order: Order) => {
+  const copyOrderInfo = async (order: Order) => {
     const text = formatSingleOrder(order);
 
-    navigator.clipboard.writeText(text).then(() => {
+    const success = await copyToClipboard(text);
+    
+    if (success) {
       if (confirm('✅ 已复制到剪贴板\n\n是否标记为已发货？')) {
         handleMarkShipped(order.id);
       }
-    }).catch(() => {
-      alert('复制失败，请手动复制');
-    });
+    } else {
+      // 显示文本供用户手动复制
+      alert(`复制失败，请手动复制以下内容：\n\n${text}`);
+    }
   };
 
   // 复制所有订单信息
@@ -72,9 +123,9 @@ export default function LogisticsPanel() {
       .map(order => formatSingleOrder(order))
       .join('\n\n\n');
 
-    try {
-      await navigator.clipboard.writeText(text);
-      
+    const success = await copyToClipboard(text);
+    
+    if (success) {
       if (activeTab === 'new') {
         // 只有在新订单标签页才询问是否标记为已发货
         if (confirm(`✅ 已复制 ${orders.length} 个订单到剪贴板\n\n是否将这些订单全部标记为已发货？`)) {
@@ -83,8 +134,9 @@ export default function LogisticsPanel() {
       } else {
         alert(`✅ 已复制 ${orders.length} 个订单到剪贴板`);
       }
-    } catch (error) {
-      alert('复制失败，请手动复制');
+    } else {
+      // 显示文本供用户手动复制
+      alert(`复制失败，请手动复制以下内容：\n\n${text.substring(0, 500)}${text.length > 500 ? '\n\n...(内容过长，请在浏览器中查看完整内容)' : ''}`);
     }
   };
 
