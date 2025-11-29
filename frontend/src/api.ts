@@ -131,3 +131,19 @@ export const queryTracking = (trackingNumber: string, phone?: string) => {
   );
 };
 
+// 手动触发检查所有已发货订单的快递状态
+export interface CheckDeliveryStatusResult {
+  checked: number;
+  updated: number;
+  errors: number;
+  timestamp: string;
+}
+
+export const manualCheckDeliveryStatus = () =>
+  apiRequest<CheckDeliveryStatusResult>(
+    '/api/cron/check-delivery-status',
+    {
+      method: 'POST',
+    }
+  );
+

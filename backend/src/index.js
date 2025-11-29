@@ -80,6 +80,10 @@ async function handleRequest(request, env) {
       const phone = url.searchParams.get('phone'); // 顺丰需要手机号后四位
       response = await queryExpressTracking(trackingNumber, phone, env);
     }
+    // Manual trigger: Check and update delivery status
+    else if (path === '/api/cron/check-delivery-status' && method === 'POST') {
+      response = await checkAndUpdateDeliveryStatus(env);
+    }
     else {
       return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
     }

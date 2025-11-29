@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, PageContainer, Input, Select } from '../components/UI';
-import { getOrders, updateOrder, updateOrderStatus, updateTracking, type Order, type CherryItem } from '../api';
+import { getOrders, updateOrder, updateOrderStatus, updateTracking, manualCheckDeliveryStatus, type Order, type CherryItem } from '../api';
 import { isAuthenticated, clearAuthentication } from '../utils/auth';
 import { ORDER_STATUS, CHERRY_VARIETIES, CHERRY_SIZES } from '../config';
 
@@ -14,6 +14,7 @@ export default function AdminPanel() {
   const [editingTrackingId, setEditingTrackingId] = useState<number | null>(null);
   const [trackingInput, setTrackingInput] = useState<string>('');
   const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
+  const [checkingDeliveryStatus, setCheckingDeliveryStatus] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -145,6 +146,34 @@ export default function AdminPanel() {
     }
   };
 
+  const handleManualCheckDeliveryStatus = async () => {
+    if (!confirm('确认要手动检查所有"已发货"订单的快递状态吗？\n\n此操作会自动将已签收的订单标记为"已完成"。')) {
+      return;
+    }
+
+    setCheckingDeliveryStatus(true);
+    try {
+      const result = await manualCheckDeliveryStatus();
+      
+      let message = `✅ 快递状态检查完成！\n\n`;
+      message += `📦 检查订单数：${result.checked}\n`;
+      message += `✅ 已完成订单：${result.updated}\n`;
+      message += `❌ 查询失败：${result.errors}\n`;
+      message += `\n时间：${new Date(result.timestamp).toLocaleString('zh-CN')}`;
+      
+      alert(message);
+      
+      // 如果有订单更新，刷新列表
+      if (result.updated > 0) {
+        loadOrders();
+      }
+    } catch (error: any) {
+      alert(`检查失败：${error.message}`);
+    } finally {
+      setCheckingDeliveryStatus(false);
+    }
+  };
+
   return (
     <PageContainer maxWidth="full">
       <div className="mb-6">
@@ -175,6 +204,13 @@ export default function AdminPanel() {
             </select>
           </div>
           <Button onClick={loadOrders}>刷新</Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleManualCheckDeliveryStatus}
+            disabled={checkingDeliveryStatus}
+          >
+            {checkingDeliveryStatus ? '检查中...' : '🔄 手动更新快递状态'}
+          </Button>
         </div>
       </div>
 
