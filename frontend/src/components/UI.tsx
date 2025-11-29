@@ -100,8 +100,10 @@ export function PageContainer({
 
   return (
     <div className={`min-h-screen bg-gray-50 py-8 px-4 flex flex-col ${className}`}>
-      <div className={`mx-auto ${maxWidthStyles[maxWidth]} flex-1`}>{children}</div>
-      <Footer />
+      <div className={`mx-auto w-full ${maxWidthStyles[maxWidth]} flex-grow`}>{children}</div>
+      <footer className="mt-12 text-center text-sm text-gray-500">
+        <p>© 版权所有归 布村好鲜生</p>
+      </footer>
     </div>
   );
 }
@@ -145,19 +147,6 @@ export function Select({ label, options, error, className = '', ...props }: Sele
       </select>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
-  );
-}
-
-// 页脚组件
-export function Footer() {
-  return (
-    <footer className="mt-12 pt-6 pb-4 text-center">
-      <div className="max-w-md mx-auto border-t border-gray-200 pt-4">
-        <p className="text-sm text-gray-500">
-          版权所有 © {new Date().getFullYear()} 布村好鲜生
-        </p>
-      </div>
-    </footer>
   );
 }
 
