@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, PageContainer, Card, Loading, Input, Select } from '../components/UI';
-import { getOrders, updateOrder, updateOrderStatus, type Order, type CherryItem } from '../api';
+import { Button, PageContainer, Input, Select } from '../components/UI';
+import { getOrders, updateOrder, updateOrderStatus, updateTracking, type Order, type CherryItem } from '../api';
 import { isAuthenticated, clearAuthentication } from '../utils/auth';
 import { ORDER_STATUS, CHERRY_VARIETIES, CHERRY_SIZES } from '../config';
 
@@ -11,6 +11,8 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editingTrackingId, setEditingTrackingId] = useState<number | null>(null);
+  const [trackingInput, setTrackingInput] = useState<string>('');
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -84,8 +86,34 @@ export default function AdminPanel() {
     setEditingOrder({ ...editingOrder, items: newItems });
   };
 
+  const handleEditTracking = (order: Order) => {
+    setEditingTrackingId(order.id);
+    setTrackingInput(order.tracking_number || '');
+  };
+
+  const handleSaveTracking = async (orderId: number) => {
+    if (!trackingInput.trim()) {
+      alert('请输入快递单号');
+      return;
+    }
+
+    try {
+      await updateTracking(orderId, trackingInput.trim());
+      alert('快递单号已更新');
+      setEditingTrackingId(null);
+      setTrackingInput('');
+      loadOrders();
+    } catch (error: any) {
+      alert(`更新失败：${error.message}`);
+    }
+  };
+
+  const formatItems = (items: CherryItem[]) => {
+    return items.map(item => `${item.variety} ${item.size} ×${item.boxes}箱`).join(', ');
+  };
+
   return (
-    <PageContainer maxWidth="xl">
+    <PageContainer maxWidth="full">
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">客服管理面板</h1>
@@ -95,7 +123,8 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      <Card className="mb-6">
+      {/* 筛选器 */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -114,82 +143,146 @@ export default function AdminPanel() {
           </div>
           <Button onClick={loadOrders}>刷新</Button>
         </div>
-      </Card>
+      </div>
 
-      {loading && <Loading />}
-
-      {!loading && orders.length === 0 && (
-        <Card>
-          <p className="text-center text-gray-600">暂无订单</p>
-        </Card>
-      )}
-
-      {!loading && orders.length > 0 && (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order.id}>
-              <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-gray-600">订单编号</p>
-                    <p className="text-xl font-semibold">{order.order_id}</p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'shipped'
-                        ? 'bg-blue-100 text-blue-700'
-                        : order.status === 'reviewed'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">商城订单号</p>
-                    <p className="font-medium">{order.mall_order_no}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">收货人</p>
-                    <p className="font-medium">{order.recipient_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">电话</p>
-                    <p className="font-medium">{order.recipient_phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">地址</p>
-                    <p className="font-medium">{order.recipient_address}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">商品清单</p>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="text-sm">
-                        {item.variety} - {item.size} × {item.boxes}箱
+      {/* 表格视图 */}
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-600">
+          暂无订单
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    订单号
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    状态
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    商城订单号
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    收货人
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    电话
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    地址
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    商品
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    快递单号
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {order.order_id}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          order.status === 'shipped'
+                            ? 'bg-blue-100 text-blue-700'
+                            : order.status === 'reviewed'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {order.mall_order_no}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {order.recipient_name}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {order.recipient_phone}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={order.recipient_address}>
+                      {order.recipient_address}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={formatItems(order.items)}>
+                      {formatItems(order.items)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {editingTrackingId === order.id ? (
+                        <div className="flex gap-1">
+                          <input
+                            type="text"
+                            value={trackingInput}
+                            onChange={(e) => setTrackingInput(e.target.value)}
+                            className="w-32 px-2 py-1 text-xs border border-gray-300 rounded"
+                            placeholder="输入单号"
+                          />
+                          <button
+                            onClick={() => handleSaveTracking(order.id)}
+                            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            保存
+                          </button>
+                          <button
+                            onClick={() => setEditingTrackingId(null)}
+                            className="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {order.tracking_number || '-'}
+                          </span>
+                          <button
+                            onClick={() => handleEditTracking(order)}
+                            className="text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            {order.tracking_number ? '修改' : '填写'}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(order)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          编辑
+                        </button>
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => handleReview(order.id)}
+                            className="text-green-600 hover:text-green-800 font-medium"
+                          >
+                            审核
+                          </button>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={() => handleEdit(order)}>
-                    编辑
-                  </Button>
-                  {order.status === 'pending' && (
-                    <Button onClick={() => handleReview(order.id)}>
-                      审核通过
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -273,4 +366,3 @@ export default function AdminPanel() {
     </PageContainer>
   );
 }
-
