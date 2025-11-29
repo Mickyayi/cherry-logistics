@@ -35,24 +35,6 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
-        <p className="mb-2">管理端入口</p>
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => navigate('/admin/login')}
-            className="text-blue-600 hover:underline"
-          >
-            客服管理
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => navigate('/logistics/login')}
-            className="text-blue-600 hover:underline"
-          >
-            物流管理
-          </button>
-        </div>
-      </div>
     </PageContainer>
   );
 }
