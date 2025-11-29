@@ -13,6 +13,7 @@ export default function AdminPanel() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editingTrackingId, setEditingTrackingId] = useState<number | null>(null);
   const [trackingInput, setTrackingInput] = useState<string>('');
+  const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -102,6 +103,31 @@ export default function AdminPanel() {
       alert('快递单号已更新');
       setEditingTrackingId(null);
       setTrackingInput('');
+      loadOrders();
+    } catch (error: any) {
+      alert(`更新失败：${error.message}`);
+    }
+  };
+
+  const handleChangeStatus = async (orderId: number, newStatus: string) => {
+    if (!newStatus) return;
+
+    const statusNames: { [key: string]: string } = {
+      pending: '待审核',
+      reviewed: '已审核',
+      shipped: '已发货',
+      completed: '已完成',
+    };
+
+    if (!confirm(`确认将订单状态改为"${statusNames[newStatus]}"吗？`)) {
+      setEditingStatusId(null);
+      return;
+    }
+
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      alert(`状态已更新为"${statusNames[newStatus]}"`);
+      setEditingStatusId(null);
       loadOrders();
     } catch (error: any) {
       alert(`更新失败：${error.message}`);
@@ -205,17 +231,49 @@ export default function AdminPanel() {
                       {order.order_id}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          order.status === 'shipped'
-                            ? 'bg-blue-100 text-blue-700'
-                            : order.status === 'reviewed'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]}
-                      </span>
+                      {editingStatusId === order.id ? (
+                        <div className="flex gap-1">
+                          <select
+                            className="px-2 py-1 text-xs border border-gray-300 rounded"
+                            onChange={(e) => handleChangeStatus(order.id, e.target.value)}
+                            defaultValue=""
+                          >
+                            <option value="">选择状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="reviewed">已审核</option>
+                            <option value="shipped">已发货</option>
+                            <option value="completed">已完成</option>
+                          </select>
+                          <button
+                            onClick={() => setEditingStatusId(null)}
+                            className="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              order.status === 'shipped'
+                                ? 'bg-blue-100 text-blue-700'
+                                : order.status === 'reviewed'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : order.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]}
+                          </span>
+                          <button
+                            onClick={() => setEditingStatusId(order.id)}
+                            className="text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            修改
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center gap-2">
