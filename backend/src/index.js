@@ -309,10 +309,15 @@ async function queryExpressTracking(trackingNumber, phone, env) {
     });
 
     const result = await response.json();
+    
+    // 调试：记录完整响应
+    console.log('Kuaidi100 API Response:', JSON.stringify(result));
 
     // 快递100 返回格式：
-    // { result: true/false, message: '...', data: [...], state: '0/1/2/3' }
-    if (result.result === false || result.returnCode !== '200') {
+    // 成功: { message: 'ok', nu: '...', ischeck: '1', condition: '...', com: '...', status: '200', state: '...', data: [...] }
+    // 失败: { message: '错误信息', nu: '', ischeck: '0', condition: '', com: '', status: '4xx', state: '', data: [] }
+    
+    if (result.status !== '200' || result.message !== 'ok') {
       throw new Error(result.message || '查询失败');
     }
 
