@@ -60,7 +60,7 @@ export default function LogisticsPanel() {
   };
 
   // 复制所有订单信息
-  const copyAllOrders = () => {
+  const copyAllOrders = async () => {
     if (orders.length === 0) {
       alert('没有可复制的订单');
       return;
@@ -70,11 +70,34 @@ export default function LogisticsPanel() {
       .map(order => formatSingleOrder(order))
       .join('\n\n\n');
 
-    navigator.clipboard.writeText(text).then(() => {
-      alert(`✅ 已复制 ${orders.length} 个订单到剪贴板`);
-    }).catch(() => {
+    try {
+      await navigator.clipboard.writeText(text);
+      
+      if (activeTab === 'new') {
+        // 只有在新订单标签页才询问是否标记为已发货
+        if (confirm(`✅ 已复制 ${orders.length} 个订单到剪贴板\n\n是否将这些订单全部标记为已发货？`)) {
+          await markAllAsShipped();
+        }
+      } else {
+        alert(`✅ 已复制 ${orders.length} 个订单到剪贴板`);
+      }
+    } catch (error) {
       alert('复制失败，请手动复制');
-    });
+    }
+  };
+
+  // 批量标记为已发货
+  const markAllAsShipped = async () => {
+    try {
+      // 并行处理所有订单
+      await Promise.all(
+        orders.map(order => updateOrderStatus(order.id, 'shipped'))
+      );
+      alert(`已将 ${orders.length} 个订单标记为已发货`);
+      loadOrders();
+    } catch (error: any) {
+      alert(`批量标记失败：${error.message}`);
+    }
   };
 
   const handleMarkShipped = async (orderId: number) => {
