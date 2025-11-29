@@ -125,19 +125,21 @@ export default function CheckOrder() {
 
                 {order.tracking_number ? (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">快递单号</p>
-                    <p className="font-semibold text-blue-700 mb-3">{order.tracking_number}</p>
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm text-gray-600">快递单号</p>
+                      {!trackingInfo[order.tracking_number] && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleQueryTracking(order.tracking_number!, order.recipient_phone)}
+                          disabled={loadingTracking[order.tracking_number]}
+                        >
+                          {loadingTracking[order.tracking_number] ? '查询中...' : '📦 查看物流'}
+                        </Button>
+                      )}
+                    </div>
+                    <p className="font-semibold text-blue-700 mb-2">{order.tracking_number}</p>
                     
-                    {!trackingInfo[order.tracking_number] && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleQueryTracking(order.tracking_number!, order.recipient_phone)}
-                        disabled={loadingTracking[order.tracking_number]}
-                        className="w-full"
-                      >
-                        {loadingTracking[order.tracking_number] ? '查询中...' : '📦 查看物流'}
-                      </Button>
-                    )}
+                    {/* 物流轨迹 */}
 
                     {/* 物流轨迹 */}
                     {order.tracking_number && trackingInfo[order.tracking_number] && (
