@@ -36,10 +36,10 @@ export default function CheckOrder() {
     }
   };
 
-  const handleQueryTracking = async (trackingNumber: string) => {
+  const handleQueryTracking = async (trackingNumber: string, recipientPhone: string) => {
     setLoadingTracking({ ...loadingTracking, [trackingNumber]: true });
     try {
-      const result = await queryTracking(trackingNumber);
+      const result = await queryTracking(trackingNumber, recipientPhone);
       setTrackingInfo({ ...trackingInfo, [trackingNumber]: result });
     } catch (error: any) {
       alert(`物流查询失败：${error.message}`);
@@ -130,7 +130,7 @@ export default function CheckOrder() {
                       {!trackingInfo[order.tracking_number] && (
                         <Button
                           size="sm"
-                          onClick={() => handleQueryTracking(order.tracking_number!)}
+                          onClick={() => handleQueryTracking(order.tracking_number!, order.recipient_phone)}
                           disabled={loadingTracking[order.tracking_number]}
                         >
                           {loadingTracking[order.tracking_number] ? '查询中...' : '查看物流'}

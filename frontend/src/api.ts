@@ -124,8 +124,10 @@ export interface TrackingInfo {
   company: string;
 }
 
-export const queryTracking = (trackingNumber: string) =>
-  apiRequest<TrackingInfo>(
-    `/api/tracking/${trackingNumber}`
+export const queryTracking = (trackingNumber: string, phone?: string) => {
+  const params = phone ? `?phone=${encodeURIComponent(phone.slice(-4))}` : '';
+  return apiRequest<TrackingInfo>(
+    `/api/tracking/${trackingNumber}${params}`
   );
+};
 
