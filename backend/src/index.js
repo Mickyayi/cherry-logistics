@@ -5,6 +5,12 @@ export default {
   async fetch(request, env) {
     return handleRequest(request, env);
   },
+  
+  // Cron Trigger: 每天00:00自动检查快递状态
+  async scheduled(event, env, ctx) {
+    console.log('Cron job started at:', new Date().toISOString());
+    ctx.waitUntil(checkAndUpdateDeliveryStatus(env));
+  },
 };
 
 async function handleRequest(request, env) {
@@ -515,3 +521,73 @@ function getStateText(state) {
   return stateMap[state] || '未知状态';
 }
 
+// 定时任务：自动检查并更新快递状态
+async function checkAndUpdateDeliveryStatus(env) {
+  console.log('Starting automatic delivery status check...');
+  
+  try {
+    // 1. 获取所有"已发货"状态且有快递单号的订单
+    const result = await env.DB.prepare(
+      `SELECT id, tracking_number, recipient_phone 
+       FROM orders 
+       WHERE status = 'shipped' AND tracking_number IS NOT NULL`
+    ).all();
+    
+    if (!result.results || result.results.length === 0) {
+      console.log('No shipped orders found to check.');
+      return { checked: 0, updated: 0 };
+    }
+    
+    const orders = result.results;
+    console.log(`Found ${orders.length} shipped orders to check.`);
+    
+    let checkedCount = 0;
+    let updatedCount = 0;
+    const errors = [];
+    
+    // 2. 逐个查询快递状态
+    for (const order of orders) {
+      try {
+        // 获取手机号后四位
+        const phone = order.recipient_phone ? order.recipient_phone.slice(-4) : '';
+        
+        // 查询快递状态
+        const trackingInfo = await queryExpressTracking(order.tracking_number, phone, env);
+        checkedCount++;
+        
+        // 3. 如果状态是"已签收"（state = '3'），更新订单状态为"已完成"
+        if (trackingInfo.state === '3') {
+          await env.DB.prepare(
+            'UPDATE orders SET status = ? WHERE id = ?'
+          ).bind('completed', order.id).run();
+          
+          updatedCount++;
+          console.log(`Order ${order.id} (${order.tracking_number}) marked as completed.`);
+        } else {
+          console.log(`Order ${order.id} (${order.tracking_number}) status: ${trackingInfo.state_text}`);
+        }
+        
+        // 添加延迟，避免频繁调用API（每次间隔1秒）
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (error) {
+        console.error(`Error checking order ${order.id}:`, error.message);
+        errors.push({ orderId: order.id, error: error.message });
+      }
+    }
+    
+    const summary = {
+      checked: checkedCount,
+      updated: updatedCount,
+      errors: errors.length,
+      timestamp: new Date().toISOString(),
+    };
+    
+    console.log('Cron job completed:', JSON.stringify(summary));
+    return summary;
+    
+  } catch (error) {
+    console.error('Fatal error in cron job:', error);
+    throw error;
+  }
+}

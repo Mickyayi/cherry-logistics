@@ -13,6 +13,11 @@ database_id = "854b2a4e-f1e4-41b2-96b1-a21cc60a3de4"
 KUAIDI100_CUSTOMER = "8355F619EE92D96EEBFC8926A99ED965"
 KUAIDI100_KEY = "sRXQlxxD9337"
 
+# 定时任务：每天00:00（北京时间）检查快递状态
+# Cron表达式使用UTC时间，北京时间00:00 = UTC 16:00（前一天）
+[triggers]
+crons = ["0 16 * * *"]
+
 # Python Worker 配置
 [build]
 command = ""
