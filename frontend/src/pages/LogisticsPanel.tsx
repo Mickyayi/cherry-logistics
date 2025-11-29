@@ -10,6 +10,8 @@ export default function LogisticsPanel() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [trackingInputs, setTrackingInputs] = useState<{ [key: number]: string }>({});
+  const [showBatchTrackingModal, setShowBatchTrackingModal] = useState(false);
+  const [batchTrackingText, setBatchTrackingText] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -132,6 +134,93 @@ export default function LogisticsPanel() {
     setTrackingInputs({ ...trackingInputs, [orderId]: value });
   };
 
+  // 批量处理快递单号
+  const handleBatchTracking = async () => {
+    if (!batchTrackingText.trim()) {
+      alert('请粘贴快递信息');
+      return;
+    }
+
+    const lines = batchTrackingText.trim().split('\n');
+    const updates: { orderId: number; trackingNumber: string; name: string }[] = [];
+    const duplicateNames: string[] = [];
+    const notFoundNames: string[] = [];
+
+    // 解析每行数据
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      // 格式：SF3274601602023	鲍剑	DURANT 32+
+      const parts = trimmedLine.split(/\s+/);
+      if (parts.length < 2) {
+        alert(`格式错误：${trimmedLine}\n\n正确格式：SF3274601602023 鲍剑 DURANT 32+`);
+        return;
+      }
+
+      const trackingNumber = parts[0];
+      const recipientName = parts[1];
+
+      // 检查快递单号格式（以SF开头）
+      if (!trackingNumber.startsWith('SF')) {
+        alert(`快递单号格式错误：${trackingNumber}\n\n快递单号应以SF开头`);
+        return;
+      }
+
+      // 在当前订单中查找匹配的姓名
+      const matchedOrders = orders.filter(
+        order => order.recipient_name === recipientName
+      );
+
+      if (matchedOrders.length === 0) {
+        notFoundNames.push(recipientName);
+      } else if (matchedOrders.length === 1) {
+        updates.push({
+          orderId: matchedOrders[0].id,
+          trackingNumber: trackingNumber,
+          name: recipientName,
+        });
+      } else {
+        // 多个相同姓名
+        duplicateNames.push(recipientName);
+      }
+    }
+
+    // 显示警告信息
+    if (notFoundNames.length > 0) {
+      alert(`以下收货人在当前订单中未找到：\n${notFoundNames.join(', ')}\n\n请检查姓名是否正确`);
+      return;
+    }
+
+    if (duplicateNames.length > 0) {
+      const confirmMsg = `以下收货人有多个订单，需要手动填写：\n${duplicateNames.join(', ')}\n\n其他订单将正常填写，是否继续？`;
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+    }
+
+    // 执行批量更新
+    try {
+      await Promise.all(
+        updates.map(({ orderId, trackingNumber }) =>
+          updateTracking(orderId, trackingNumber)
+        )
+      );
+
+      let successMsg = `✅ 成功填写 ${updates.length} 个快递单号`;
+      if (duplicateNames.length > 0) {
+        successMsg += `\n\n⚠️ 以下收货人有重复，请手动填写：\n${duplicateNames.join(', ')}`;
+      }
+      
+      alert(successMsg);
+      setShowBatchTrackingModal(false);
+      setBatchTrackingText('');
+      loadOrders();
+    } catch (error: any) {
+      alert(`批量填写失败：${error.message}`);
+    }
+  };
+
   return (
     <PageContainer maxWidth="lg">
       <div className="mb-6">
@@ -177,8 +266,8 @@ export default function LogisticsPanel() {
         </Card>
       )}
 
-      {/* 一键复制所有订单按钮 */}
-      {!loading && orders.length > 0 && (
+      {/* 一键复制所有订单按钮（仅新订单） */}
+      {!loading && orders.length > 0 && activeTab === 'new' && (
         <div className="mb-4">
           <Button
             fullWidth
@@ -187,6 +276,20 @@ export default function LogisticsPanel() {
             onClick={copyAllOrders}
           >
             📋 一键复制所有物流信息 ({orders.length}个订单)
+          </Button>
+        </div>
+      )}
+
+      {/* 一键填写快递单号按钮（仅配送中） */}
+      {!loading && orders.length > 0 && activeTab === 'shipping' && (
+        <div className="mb-4">
+          <Button
+            fullWidth
+            size="lg"
+            variant="secondary"
+            onClick={() => setShowBatchTrackingModal(true)}
+          >
+            📦 一键填写快递单号 ({orders.length}个订单)
           </Button>
         </div>
       )}
@@ -305,6 +408,52 @@ export default function LogisticsPanel() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* 批量填写快递单号弹窗 */}
+      {showBatchTrackingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-bold mb-4">批量填写快递单号</h2>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                请粘贴快递信息，每行一条，格式：快递单号 收货人姓名 其他信息
+              </p>
+              <p className="text-sm text-gray-500 mb-3">
+                示例：SF3274601602023 鲍剑 DURANT 32+
+              </p>
+              
+              <textarea
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono text-sm"
+                rows={10}
+                placeholder="SF3274601602023 鲍剑 DURANT 32+&#10;SF3274601602024 张三 DURANT 34+&#10;SF3274601602025 李四 DURANT 36+"
+                value={batchTrackingText}
+                onChange={(e) => setBatchTrackingText(e.target.value)}
+              />
+              
+              <p className="text-xs text-gray-500 mt-2">
+                ⚠️ 注意：快递单号必须以SF开头，系统将自动匹配收货人姓名
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button fullWidth onClick={handleBatchTracking}>
+                开始填写
+              </Button>
+              <Button 
+                fullWidth 
+                variant="secondary" 
+                onClick={() => {
+                  setShowBatchTrackingModal(false);
+                  setBatchTrackingText('');
+                }}
+              >
+                取消
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </PageContainer>
