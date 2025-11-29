@@ -2,9 +2,12 @@
   "$schema": "https://developers.cloudflare.com/pages/platform/build-configuration",
   "version": 1,
   "build": {
-    "command": "npm run build",
+    "command": "npm install && npm run build",
     "cwd": "frontend",
-    "output_directory": "dist"
+    "output_directory": "dist",
+    "watch_paths": ["frontend/**"]
+  },
+  "env": {
+    "NODE_VERSION": "18"
   }
 }
-
