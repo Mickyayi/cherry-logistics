@@ -325,9 +325,14 @@ async function queryExpressTracking(trackingNumber, phone, env) {
 
     // 快递100 返回格式：
     // 成功: { message: 'ok', nu: '...', ischeck: '1', condition: '...', com: '...', status: '200', state: '...', data: [...] }
-    // 失败: { message: '错误信息', nu: '', ischeck: '0', condition: '', com: '', status: '4xx', state: '', data: [] }
+    // 失败: { message: '错误信息', nu: '', ischeck: '0', condition: '', com: '', status: '4xx/500', state: '', data: [] }
     
     if (result.status !== '200' || result.message !== 'ok') {
+      // 特殊处理：查询无结果的情况
+      if (result.returnCode === '500' || result.message.includes('查询无结果') || result.message.includes('请隔段时间')) {
+        throw new Error('该快递单号暂无物流信息，可能是刚发货尚未录入系统。建议明日再查询，或联系快递公司确认单号。');
+      }
+      // 其他错误
       throw new Error(result.message || '查询失败');
     }
 
