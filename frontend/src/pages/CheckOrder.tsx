@@ -42,7 +42,7 @@ export default function CheckOrder() {
       const result = await queryTracking(trackingNumber, recipientPhone);
       setTrackingInfo({ ...trackingInfo, [trackingNumber]: result });
     } catch (error: any) {
-      alert(`物流查询失败：${error.message}`);
+      alert(error.message || '查询失败，请稍后重试');
     } finally {
       setLoadingTracking({ ...loadingTracking, [trackingNumber]: false });
     }

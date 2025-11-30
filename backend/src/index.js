@@ -346,7 +346,7 @@ async function queryExpressTracking(trackingNumber, phone, env) {
     };
   } catch (error) {
     console.error('Kuaidi100 API Error:', error);
-    throw new Error(`物流查询失败：${error.message}`);
+    throw new Error(error.message);
   }
 }
 
