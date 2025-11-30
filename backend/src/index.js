@@ -286,16 +286,28 @@ async function queryExpressTracking(trackingNumber, phone, env) {
     throw new Error('请提供快递单号');
   }
 
+  // 调试日志
+  console.log('Tracking query:', { trackingNumber, phone });
+
   // 快递100 API 配置
   const KUAIDI100_CUSTOMER = env.KUAIDI100_CUSTOMER || '8355F619EE92D96EEBFC8926A99ED965';
   const KUAIDI100_KEY = env.KUAIDI100_KEY || 'sRXQlxxD9337';
+  
+  // 顺丰快递必须提供手机号后四位
+  if (!phone || phone.length < 4) {
+    return {
+      success: false,
+      error: '查询顺丰快递需要提供收件人手机号。系统数据可能不完整，请联系客服。',
+      tracking_number: trackingNumber,
+    };
+  }
   
   // 快递100 API 参数
   // 顺丰快递需要提供收件人或寄件人手机号后四位
   const param = JSON.stringify({
     com: 'shunfeng', // 顺丰快递代码
     num: trackingNumber,
-    phone: phone || '', // 顺丰必须：收件人或寄件人手机号后四位
+    phone: phone, // 顺丰必须：收件人或寄件人手机号后四位
   });
 
   // 生成签名：MD5(param + key + customer)
