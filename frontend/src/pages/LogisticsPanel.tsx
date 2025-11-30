@@ -44,7 +44,7 @@ export default function LogisticsPanel() {
     const itemsText = order.items
       .map(item => `${item.boxes}箱 ${item.size} ${item.variety}`)
       .join('\n');
-    
+
     return `${itemsText}\n${order.recipient_name} ${order.recipient_phone} ${order.recipient_address}`;
   };
 
@@ -64,7 +64,7 @@ export default function LogisticsPanel() {
     try {
       const textArea = document.createElement('textarea');
       textArea.value = text;
-      
+
       // 防止页面滚动和键盘弹出
       textArea.style.position = 'fixed';
       textArea.style.top = '0';
@@ -77,15 +77,15 @@ export default function LogisticsPanel() {
       textArea.style.boxShadow = 'none';
       textArea.style.background = 'transparent';
       textArea.style.opacity = '0';
-      
+
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      
+
       // 尝试复制
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
-      
+
       if (successful) {
         return true;
       }
@@ -101,7 +101,7 @@ export default function LogisticsPanel() {
     const text = formatSingleOrder(order);
 
     const success = await copyToClipboard(text);
-    
+
     if (success) {
       if (confirm('✅ 已复制到剪贴板\n\n是否标记为已发货？')) {
         handleMarkShipped(order.id);
@@ -124,7 +124,7 @@ export default function LogisticsPanel() {
       .join('\n\n\n');
 
     const success = await copyToClipboard(text);
-    
+
     if (success) {
       if (activeTab === 'new') {
         // 只有在新订单标签页才询问是否标记为已发货
@@ -166,7 +166,7 @@ export default function LogisticsPanel() {
 
   const handleUpdateTracking = async (orderId: number) => {
     const trackingNumber = trackingInputs[orderId];
-    
+
     if (!trackingNumber || !trackingNumber.trim()) {
       alert('请输入快递单号');
       return;
@@ -263,7 +263,7 @@ export default function LogisticsPanel() {
       if (duplicateNames.length > 0) {
         successMsg += `\n\n⚠️ 以下收货人有重复，请手动填写：\n${duplicateNames.join(', ')}`;
       }
-      
+
       alert(successMsg);
       setShowBatchTrackingModal(false);
       setBatchTrackingText('');
@@ -288,21 +288,19 @@ export default function LogisticsPanel() {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setActiveTab('new')}
-          className={`flex-1 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'new'
+          className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'new'
               ? 'bg-red-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300'
-          }`}
+            }`}
         >
           📦 新订单
         </button>
         <button
           onClick={() => setActiveTab('shipping')}
-          className={`flex-1 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'shipping'
+          className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'shipping'
               ? 'bg-red-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300'
-          }`}
+            }`}
         >
           🚚 正在配送
         </button>
@@ -403,63 +401,86 @@ export default function LogisticsPanel() {
       {/* 配送中订单列表 */}
       {!loading && activeTab === 'shipping' && orders.length > 0 && (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order.id}>
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-gray-600">订单编号</p>
-                    <p className="text-xl font-semibold">{order.order_id}</p>
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                    已发货
-                  </span>
-                </div>
+          {orders.map((order) => {
+            // 计算发货天数
+            const shippedDays = order.shipped_at
+              ? Math.floor((Date.now() / 1000 - order.shipped_at) / 86400)
+              : null;
+            const isOverdue = shippedDays !== null && shippedDays > 5;
 
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-600">收货人：</span>
-                    <span className="font-medium">{order.recipient_name}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">电话：</span>
-                    <span className="font-medium">{order.recipient_phone}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">商品：</span>
-                    <div className="font-medium">
-                      {order.items.map((item, idx) => (
-                        <div key={idx}>
-                          {item.boxes}箱 {item.size} {item.variety}
-                        </div>
-                      ))}
+            return (
+              <Card key={order.id} className={isOverdue ? 'border-2 border-red-500' : ''}>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-gray-600">订单编号</p>
+                      <p className="text-xl font-semibold">{order.order_id}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                        已发货
+                      </span>
+                      {shippedDays !== null && (
+                        <span className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
+                          已发货{shippedDays}天
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                {order.tracking_number ? (
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">快递单号</p>
-                    <p className="font-semibold text-green-700">{order.tracking_number}</p>
-                  </div>
-                ) : (
+                  {isOverdue && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-700 font-medium text-sm">
+                        ⚠️ 该订单已发货超过5天，请跟进物流进度
+                      </p>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Input
-                      placeholder="请输入快递单号"
-                      value={trackingInputs[order.id] || ''}
-                      onChange={(e) => updateTrackingInput(order.id, e.target.value)}
-                    />
-                    <Button
-                      fullWidth
-                      onClick={() => handleUpdateTracking(order.id)}
-                    >
-                      提交快递单号
-                    </Button>
+                    <div>
+                      <span className="text-sm text-gray-600">收货人：</span>
+                      <span className="font-medium">{order.recipient_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">电话：</span>
+                      <span className="font-medium">{order.recipient_phone}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">商品：</span>
+                      <div className="font-medium">
+                        {order.items.map((item, idx) => (
+                          <div key={idx}>
+                            {item.boxes}箱 {item.size} {item.variety}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            </Card>
-          ))}
+
+                  {order.tracking_number ? (
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-1">快递单号</p>
+                      <p className="font-semibold text-green-700">{order.tracking_number}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="请输入快递单号"
+                        value={trackingInputs[order.id] || ''}
+                        onChange={(e) => updateTrackingInput(order.id, e.target.value)}
+                      />
+                      <Button
+                        fullWidth
+                        onClick={() => handleUpdateTracking(order.id)}
+                      >
+                        提交快递单号
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -468,7 +489,7 @@ export default function LogisticsPanel() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
             <h2 className="text-xl font-bold mb-4">批量填写快递单号</h2>
-            
+
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
                 请粘贴快递信息，每行一条，格式：快递单号 收货人姓名 其他信息
@@ -476,7 +497,7 @@ export default function LogisticsPanel() {
               <p className="text-sm text-gray-500 mb-3">
                 示例：SF3274601602023 鲍剑 DURANT 32+
               </p>
-              
+
               <textarea
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono text-sm"
                 rows={10}
@@ -484,7 +505,7 @@ export default function LogisticsPanel() {
                 value={batchTrackingText}
                 onChange={(e) => setBatchTrackingText(e.target.value)}
               />
-              
+
               <p className="text-xs text-gray-500 mt-2">
                 ⚠️ 注意：快递单号必须以SF开头，系统将自动匹配收货人姓名
               </p>
@@ -494,9 +515,9 @@ export default function LogisticsPanel() {
               <Button fullWidth onClick={handleBatchTracking}>
                 开始填写
               </Button>
-              <Button 
-                fullWidth 
-                variant="secondary" 
+              <Button
+                fullWidth
+                variant="secondary"
                 onClick={() => {
                   setShowBatchTrackingModal(false);
                   setBatchTrackingText('');

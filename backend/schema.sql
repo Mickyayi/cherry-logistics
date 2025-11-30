@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS orders (
     items TEXT NOT NULL,  -- JSON 字符串存储商品列表
     status TEXT NOT NULL DEFAULT 'pending',  -- pending/reviewed/shipped/completed
     tracking_number TEXT,
+    shipped_at INTEGER,  -- 快递单号填写时间戳
     created_at INTEGER NOT NULL
 );
 

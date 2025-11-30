@@ -203,6 +203,7 @@ async function getOrders(status, page, env) {
     items: JSON.parse(row.items),
     status: row.status,
     tracking_number: row.tracking_number,
+    shipped_at: row.shipped_at,
     created_at: row.created_at,
   }));
 
@@ -264,8 +265,11 @@ async function updateTracking(orderId, trackingNumber, env) {
   // 允许空值（清除快递单号），将空字符串或 null 存储为 NULL
   const trackingValue = trackingNumber && trackingNumber.trim() ? trackingNumber.trim() : null;
 
-  await env.DB.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?')
-    .bind(trackingValue, orderId)
+  // 如果填写了快递单号，记录填写时间；如果清空，也清空时间
+  const shippedAt = trackingValue ? Math.floor(Date.now() / 1000) : null;
+
+  await env.DB.prepare('UPDATE orders SET tracking_number = ?, shipped_at = ? WHERE id = ?')
+    .bind(trackingValue, shippedAt, orderId)
     .run();
 
   return { success: true, message: '快递单号更新成功' };

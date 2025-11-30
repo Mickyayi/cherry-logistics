@@ -43,6 +43,7 @@ export interface Order extends OrderCreate {
   order_id: string;
   status: string;
   tracking_number?: string;
+  shipped_at?: number;
   created_at: number;
 }
 
