@@ -21,7 +21,7 @@ export default function AdminLogin() {
     try {
       await authenticate(passcode);
       setAuthenticated();
-      navigate('/admin');
+      navigate('/haofresh');
     } catch (error: any) {
       alert(`登录失败：${error.message}`);
     } finally {

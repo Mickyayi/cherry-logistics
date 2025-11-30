@@ -18,7 +18,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      navigate('/admin/login');
+      navigate('/haofresh/login');
       return;
     }
     loadOrders();
@@ -38,7 +38,7 @@ export default function AdminPanel() {
 
   const handleLogout = () => {
     clearAuthentication();
-    navigate('/admin/login');
+    navigate('/haofresh/login');
   };
 
   const handleReview = async (orderId: number) => {

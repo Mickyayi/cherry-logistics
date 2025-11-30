@@ -1,8 +1,6 @@
 // API 配置
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
-export const ADMIN_PASSCODE = '8888';
-
 export const ORDER_STATUS = {
   pending: '待审核',
   reviewed: '已审核',

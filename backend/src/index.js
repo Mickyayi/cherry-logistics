@@ -271,7 +271,7 @@ async function updateTracking(orderId, trackingNumber, env) {
 }
 
 async function authenticate(passcode) {
-  const ADMIN_PASSCODE = '8888';
+  const ADMIN_PASSCODE = '145284';
 
   if (passcode === ADMIN_PASSCODE) {
     return { success: true, message: '验证成功' };
