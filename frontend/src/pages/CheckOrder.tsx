@@ -40,7 +40,15 @@ export default function CheckOrder() {
     setLoadingTracking({ ...loadingTracking, [trackingNumber]: true });
     try {
       const result = await queryTracking(trackingNumber, recipientPhone);
-      setTrackingInfo({ ...trackingInfo, [trackingNumber]: result });
+      
+      // 检查API返回的success字段
+      if (result.success === false && 'error' in result) {
+        alert((result as any).error);
+      } else if (result.success) {
+        setTrackingInfo({ ...trackingInfo, [trackingNumber]: result });
+      } else {
+        alert('查询失败，请稍后重试');
+      }
     } catch (error: any) {
       alert(error.message || '查询失败，请稍后重试');
     } finally {

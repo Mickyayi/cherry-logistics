@@ -328,9 +328,13 @@ async function queryExpressTracking(trackingNumber, phone, env) {
     // 失败: { message: '错误信息', nu: '', ischeck: '0', condition: '', com: '', status: '4xx/500', state: '', data: [] }
     
     if (result.status !== '200' || result.message !== 'ok') {
-      // 特殊处理：查询无结果的情况
+      // 特殊处理：查询无结果的情况（返回友好提示，但success=false）
       if (result.returnCode === '500' || result.message.includes('查询无结果') || result.message.includes('请隔段时间')) {
-        throw new Error('该快递单号暂无物流信息，可能是刚发货尚未录入系统。建议明日再查询，或联系快递公司确认单号。');
+        return {
+          success: false,
+          error: '该快递单号暂无物流信息，可能是刚发货尚未录入系统。建议明日再查询，或联系快递公司确认单号。',
+          tracking_number: trackingNumber,
+        };
       }
       // 其他错误
       throw new Error(result.message || '查询失败');
