@@ -11,7 +11,7 @@ export default function LogisticsLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!passcode) {
       alert('请输入密码');
       return;
@@ -19,7 +19,7 @@ export default function LogisticsLogin() {
 
     setLoading(true);
     try {
-      await authenticate(passcode);
+      await authenticate(passcode, 'logistics');
       setAuthenticated();
       navigate('/logistics');
     } catch (error: any) {

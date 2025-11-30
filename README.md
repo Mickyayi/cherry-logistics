@@ -7,6 +7,7 @@
 ### 用户端（手机网页）
 - 提交物流信息（订单号、收货人信息、樱桃品种/大小/数量）
 - 查询物流状态（通过姓名+电话）
+- **实时物流追踪**（集成快递100 API）
 
 ### 客服端（桌面网页）
 - 查看所有订单
@@ -22,7 +23,7 @@
 ## 🏗️ 技术架构
 
 - **前端**: React + TypeScript + Tailwind CSS
-- **后端**: Cloudflare Workers (Python + FastAPI)
+- **后端**: Cloudflare Workers (JavaScript/Node.js)
 - **数据库**: Cloudflare D1 (SQLite)
 - **部署**: Cloudflare Pages (前端) + Cloudflare Workers (后端)
 
@@ -37,12 +38,12 @@ cherry/
 │   │   ├── api.ts    # API 请求封装
 │   │   └── config.ts # 配置文件
 │   └── package.json
-├── backend/           # Python Workers 后端
+├── backend/           # Workers 后端应用
 │   ├── src/
-│   │   └── index.py  # FastAPI 应用
+│   │   └── index.js  # Worker 入口
 │   ├── schema.sql    # 数据库表结构
 │   ├── wrangler.toml # Cloudflare 配置
-│   └── requirements.txt
+│   └── package.json
 └── README.md
 ```
 
@@ -52,6 +53,7 @@ cherry/
 
 ```bash
 cd backend
+npm install
 wrangler login
 wrangler d1 create cherry-logistics-db
 ```
@@ -87,12 +89,12 @@ wrangler deploy
 ### 5. 访问系统
 
 - 用户端: `https://your-pages-project.pages.dev`
-- 客服端: `https://your-pages-project.pages.dev/admin/login` (密码: 8888)
-- 物流端: `https://your-pages-project.pages.dev/logistics/login` (密码: 8888)
+- 客服端: `https://your-pages-project.pages.dev/admin/login` (密码: 145284)
+- 物流端: `https://your-pages-project.pages.dev/logistics/login` (密码: 145284)
 
 ## 🔐 安全配置
 
-默认管理密码为 `8888`，建议在 `backend/src/index.py` 中修改 `ADMIN_PASSCODE` 常量。
+默认管理密码为 `145284`，建议在 `backend/src/index.js` 中修改 `ADMIN_PASSCODE` 常量。
 
 ## 📱 订单状态流转
 
@@ -128,6 +130,7 @@ npm run dev  # 访问 http://localhost:5173
 ### 后端
 ```bash
 cd backend
+npm install
 wrangler dev  # 本地测试 Worker
 ```
 

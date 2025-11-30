@@ -5,7 +5,7 @@ export default {
   async fetch(request, env) {
     return handleRequest(request, env);
   },
-  
+
   // Cron Trigger: 每天00:00自动检查快递状态
   async scheduled(event, env, ctx) {
     console.log('Cron job started at:', new Date().toISOString());
@@ -57,7 +57,7 @@ async function handleRequest(request, env) {
     else if (path.startsWith('/api/orders/') && method === 'PUT') {
       const parts = path.split('/');
       const orderId = parseInt(parts[3]);
-      
+
       if (path.endsWith('/status')) {
         const status = url.searchParams.get('status');
         response = await updateOrderStatus(orderId, status, env);
@@ -72,7 +72,7 @@ async function handleRequest(request, env) {
     // Auth
     else if (path === '/api/auth' && method === 'POST') {
       const body = await request.json();
-      response = await authenticate(body.passcode);
+      response = await authenticate(body.passcode, body.role);
     }
     // Query express tracking (快递100)
     else if (path.startsWith('/api/tracking/') && method === 'GET') {
@@ -182,7 +182,7 @@ async function getOrders(status, page, env) {
   const offset = (page - 1) * limit;
 
   let query, params;
-  
+
   if (status) {
     query = `SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`;
     params = [status, limit, offset];
@@ -248,7 +248,7 @@ async function updateOrder(orderId, data, env) {
 
 async function updateOrderStatus(orderId, status, env) {
   const validStatuses = ['pending', 'reviewed', 'shipped', 'completed'];
-  
+
   if (!validStatuses.includes(status)) {
     throw new Error('无效的状态值');
   }
@@ -271,14 +271,27 @@ async function updateTracking(orderId, trackingNumber, env) {
   return { success: true, message: '快递单号更新成功' };
 }
 
-async function authenticate(passcode) {
+async function authenticate(passcode, role) {
   const ADMIN_PASSCODE = '145284';
+  const LOGISTICS_PASSCODE = '8888';
 
-  if (passcode === ADMIN_PASSCODE) {
-    return { success: true, message: '验证成功' };
+  // If role is specified, check against the specific role's password
+  if (role === 'admin') {
+    if (passcode === ADMIN_PASSCODE) {
+      return { success: true, message: '验证成功' };
+    }
+  } else if (role === 'logistics') {
+    if (passcode === LOGISTICS_PASSCODE) {
+      return { success: true, message: '验证成功' };
+    }
   } else {
-    throw new Error('密码错误');
+    // Backward compatibility: if no role specified, check both (but this shouldn't happen with updated frontend)
+    if (passcode === ADMIN_PASSCODE || passcode === LOGISTICS_PASSCODE) {
+      return { success: true, message: '验证成功' };
+    }
   }
+
+  throw new Error('密码错误');
 }
 
 // 查询快递物流信息（快递100）
@@ -290,7 +303,7 @@ async function queryExpressTracking(trackingNumber, phone, env) {
   // 快递100 API 配置
   const KUAIDI100_CUSTOMER = env.KUAIDI100_CUSTOMER || '8355F619EE92D96EEBFC8926A99ED965';
   const KUAIDI100_KEY = env.KUAIDI100_KEY || 'sRXQlxxD9337';
-  
+
   // 快递100 API 参数
   // 顺丰快递需要提供收件人或寄件人手机号后四位
   const param = JSON.stringify({
@@ -320,14 +333,14 @@ async function queryExpressTracking(trackingNumber, phone, env) {
     });
 
     const result = await response.json();
-    
+
     // 调试：记录完整响应
     console.log('Kuaidi100 API Response:', JSON.stringify(result));
 
     // 快递100 返回格式：
     // 成功: { message: 'ok', nu: '...', ischeck: '1', condition: '...', com: '...', status: '200', state: '...', data: [...] }
     // 失败: { message: '错误信息', nu: '', ischeck: '0', condition: '', com: '', status: '4xx/500', state: '', data: [] }
-    
+
     if (result.status !== '200' || result.message !== 'ok') {
       // 特殊处理：查询无结果的情况（返回友好提示，但success=false）
       if (result.returnCode === '500' || result.message.includes('查询无结果') || result.message.includes('请隔段时间')) {
@@ -423,7 +436,7 @@ function generateMD5(str) {
   str = utf8Encode(str);
   const x = convertToWordArray(str);
   const len = str.length * 8;
-  
+
   x[len >> 5] |= 0x80 << (len % 32);
   x[(((len + 64) >>> 9) << 4) + 14] = len;
 
@@ -538,7 +551,7 @@ function getStateText(state) {
 // 定时任务：自动检查并更新快递状态
 async function checkAndUpdateDeliveryStatus(env) {
   console.log('Starting automatic delivery status check...');
-  
+
   try {
     // 1. 获取所有"已发货"状态且有快递单号的订单
     const result = await env.DB.prepare(
@@ -546,60 +559,60 @@ async function checkAndUpdateDeliveryStatus(env) {
        FROM orders 
        WHERE status = 'shipped' AND tracking_number IS NOT NULL`
     ).all();
-    
+
     if (!result.results || result.results.length === 0) {
       console.log('No shipped orders found to check.');
       return { checked: 0, updated: 0 };
     }
-    
+
     const orders = result.results;
     console.log(`Found ${orders.length} shipped orders to check.`);
-    
+
     let checkedCount = 0;
     let updatedCount = 0;
     const errors = [];
-    
+
     // 2. 逐个查询快递状态
     for (const order of orders) {
       try {
         // 获取手机号后四位
         const phone = order.recipient_phone ? order.recipient_phone.slice(-4) : '';
-        
+
         // 查询快递状态
         const trackingInfo = await queryExpressTracking(order.tracking_number, phone, env);
         checkedCount++;
-        
+
         // 3. 如果状态是"已签收"（state = '3'），更新订单状态为"已完成"
         if (trackingInfo.state === '3') {
           await env.DB.prepare(
             'UPDATE orders SET status = ? WHERE id = ?'
           ).bind('completed', order.id).run();
-          
+
           updatedCount++;
           console.log(`Order ${order.id} (${order.tracking_number}) marked as completed.`);
         } else {
           console.log(`Order ${order.id} (${order.tracking_number}) status: ${trackingInfo.state_text}`);
         }
-        
+
         // 添加延迟，避免频繁调用API（每次间隔1秒）
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
       } catch (error) {
         console.error(`Error checking order ${order.id}:`, error.message);
         errors.push({ orderId: order.id, error: error.message });
       }
     }
-    
+
     const summary = {
       checked: checkedCount,
       updated: updatedCount,
       errors: errors.length,
       timestamp: new Date().toISOString(),
     };
-    
+
     console.log('Cron job completed:', JSON.stringify(summary));
     return summary;
-    
+
   } catch (error) {
     console.error('Fatal error in cron job:', error);
     throw error;

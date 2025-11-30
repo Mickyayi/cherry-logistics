@@ -6,7 +6,7 @@ export async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -101,12 +101,12 @@ export const updateTracking = (id: number, tracking_number: string) =>
   );
 
 // 验证管理员密码
-export const authenticate = (passcode: string) =>
+export const authenticate = (passcode: string, role?: 'admin' | 'logistics') =>
   apiRequest<{ success: boolean; message: string }>(
     '/api/auth',
     {
       method: 'POST',
-      body: JSON.stringify({ passcode }),
+      body: JSON.stringify({ passcode, role }),
     }
   );
 
