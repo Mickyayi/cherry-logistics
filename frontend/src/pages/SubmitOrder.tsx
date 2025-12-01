@@ -39,14 +39,14 @@ export default function SubmitOrder() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 验证
     if (!formData.mall_order_no || !formData.recipient_name || !formData.recipient_phone || !formData.recipient_address) {
       alert('请填写所有必填项');
       return;
     }
 
-    if (items.some(item => !item.variety || !item.size || item.boxes < 1)) {
+    if (items.some(item => !item.variety || !item.size || !item.boxes || (typeof item.boxes === 'number' && item.boxes < 1))) {
       alert('请完整填写商品信息');
       return;
     }
@@ -55,7 +55,10 @@ export default function SubmitOrder() {
     try {
       const result = await createOrder({
         ...formData,
-        items,
+        items: items.map(item => ({
+          ...item,
+          boxes: typeof item.boxes === 'string' ? parseInt(item.boxes) : item.boxes
+        })),
       });
       alert(`订单提交成功！订单号：${result.order_id}`);
       navigate('/');
@@ -160,7 +163,18 @@ export default function SubmitOrder() {
                     type="number"
                     min="1"
                     value={item.boxes}
-                    onChange={(e) => handleItemChange(index, 'boxes', parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // 允许空值或者有效的数字
+                      if (value === '' || value === '0') {
+                        handleItemChange(index, 'boxes', '');
+                      } else {
+                        const num = parseInt(value);
+                        if (!isNaN(num) && num > 0) {
+                          handleItemChange(index, 'boxes', num);
+                        }
+                      }
+                    }}
                     required
                   />
                 </div>

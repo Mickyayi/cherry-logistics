@@ -27,7 +27,7 @@ export async function apiRequest<T>(
 export interface CherryItem {
   variety: string;
   size: string;
-  boxes: number;
+  boxes: number | string;
 }
 
 export interface OrderCreate {
