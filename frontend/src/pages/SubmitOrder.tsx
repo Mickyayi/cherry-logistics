@@ -110,12 +110,12 @@ export default function SubmitOrder() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              4. 国内收货人地址（包括邮编）
+              4. 国内收货人地址
             </label>
             <textarea
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               rows={3}
-              placeholder="请输入完整地址和邮编"
+              placeholder="请务必输入国内完整地址，包括所在城市、区县、详细门牌号码，以确保货品正确及时送达。"
               value={formData.recipient_address}
               onChange={(e) => handleInputChange('recipient_address', e.target.value)}
               required
