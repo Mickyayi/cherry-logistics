@@ -15,6 +15,7 @@ export const CHERRY_VARIETIES = [
 ] as const;
 
 export const CHERRY_SIZES = [
+  '28-30mm',
   '30-32mm',
   '32-34mm',
   '34-36mm',
