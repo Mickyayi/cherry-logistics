@@ -13,6 +13,7 @@ export const CHERRY_VARIETIES = [
   '樱花车厘子',
   'Cherry Hill 红樱桃',
   'Skyla rea 白樱桃',
+  '黄樱桃（测试）',
 ] as const;
 
 export const CHERRY_SIZES = [
@@ -21,4 +22,3 @@ export const CHERRY_SIZES = [
   '32-34mm',
   '34-36mm',
 ] as const;
-
