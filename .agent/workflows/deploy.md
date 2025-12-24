@@ -20,7 +20,14 @@ cd backend
 npx wrangler deploy
 ```
 
-3. 推送到 GitHub（触发 Cloudflare Pages 自动部署前端）
+3. 构建并部署前端到 Cloudflare Pages
+```bash
+cd ../frontend
+npm run build
+npx wrangler pages deploy dist --project-name=cherry-logistics
+```
+
+4. 推送到 GitHub
 ```bash
 cd ..
 git push
@@ -29,5 +36,5 @@ git push
 ## 说明
 
 - 后端部署到：`https://cherry-logistics-backend.haofreshbne.workers.dev`
-- 前端会自动部署到 Cloudflare Pages
-- 部署完成后需等待 1-2 分钟前端构建完成
+- 前端部署到：`https://cherry-logistics.pages.dev`
+- 部署完成后立即生效
