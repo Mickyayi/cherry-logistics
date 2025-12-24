@@ -11,10 +11,10 @@ export const ORDER_STATUS = {
 export const CHERRY_VARIETIES = [
   '考拉车厘子',
   '樱花车厘子',
-  'Cherry Hill 红樱桃',
-  'Skyla rea 白樱桃',
   '金考拉车厘子',
   '塔州 Reid车厘子',
+  'Cherry Hill 红樱桃',
+  'Skyla rea 白樱桃',
 ] as const;
 
 export const CHERRY_SIZES = [
