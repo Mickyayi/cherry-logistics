@@ -87,10 +87,9 @@ wrangler deploy
    - `VITE_API_URL`: Worker 的 URL（步骤3中记录的）
 
 ### 5. 访问系统
-
-- 用户端: `https://your-pages-project.pages.dev`
-- 客服端: `https://your-pages-project.pages.dev/admin/login` (密码: 145284)
-- 物流端: `https://your-pages-project.pages.dev/logistics/login` (密码: 145284)
+- 用户端: `https://cherry.haofresh.com.cn`
+- 客服端: `https://cherry.haofresh.com.cn/admin/login` (密码: 145284)
+- 物流端: `https://cherry.haofresh.com.cn/logistics/login` (密码: 145284)
 
 ## 🔐 安全配置
 

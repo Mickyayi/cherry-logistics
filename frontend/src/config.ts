@@ -1,5 +1,9 @@
 // API 配置
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+// 优先使用环境变量，但如果环境变量是旧的 workers.dev 域名（被墙），则强制使用新域名
+const envApiUrl = import.meta.env.VITE_API_URL;
+export const API_BASE_URL = (envApiUrl && !envApiUrl.includes('workers.dev'))
+  ? envApiUrl
+  : (import.meta.env.PROD ? 'https://cherry-api.haofresh.com.cn' : 'http://localhost:8787');
 
 export const ORDER_STATUS = {
   pending: '待审核',
